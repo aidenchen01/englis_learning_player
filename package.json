@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && npm run copy:assets",
-    "copy:assets": "copyfiles -u 1 src/renderer/**/* dist/renderer",
+    "copy:assets": "rimraf dist/renderer && copyfiles -a -u 2 \"src/renderer/**/*\" \"src/renderer/*\" dist/renderer",
     "start": "npm run build && electron dist/main/main.js",
     "test": "vitest run",
     "pretest": "npm run build",
