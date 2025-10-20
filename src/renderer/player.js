@@ -198,7 +198,9 @@
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.code === 'Space') {
+    const code = event.code || event.key;
+
+    if (code === 'Space' || code === ' ') {
       event.preventDefault();
       handlePlayPauseToggle();
       return;
@@ -219,6 +221,8 @@
       mediaElement.currentTime = state.currentTime;
       updateUI();
     }
+
+    handleSeekKeydown(event);
   });
 
   mediaElement.addEventListener('loadedmetadata', () => {
