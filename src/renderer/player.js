@@ -20,7 +20,7 @@
   } = playerStateModule;
   const { formatTime } = timeFormatterModule;
   const { timeToPercentage, percentageToTime } = timelineMathModule;
-  const { SEEK_STEP_OPTIONS, createSeekStepStore, createSeekKeydownHandler } = seekStepModule;
+  const { SEEK_STEP_OPTIONS, createSeekStepStore, calculateSeekTarget } = seekStepModule;
 
   const fileInput = document.getElementById('file-input');
   const playPauseButton = document.getElementById('play-pause');
@@ -42,18 +42,6 @@
 
   mediaElement.classList.add('is-hidden');
   mediaElement.volume = state.volume;
-  const handleSeekKeydown = createSeekKeydownHandler({
-    hasSource: () => hasSource(state),
-    getSeekStep: () => currentSeekStep,
-    getCurrentTime: () => state.currentTime,
-    getDuration: () => state.duration,
-    applySeek(nextTime) {
-      state = updateTime(state, nextTime);
-      mediaElement.currentTime = state.currentTime;
-      updateUI();
-    }
-  });
-
   initializeSeekStepSelect();
   updateUI();
 
@@ -216,6 +204,22 @@
       event.preventDefault();
       handlePlayPauseToggle();
       return;
+    }
+
+    if (!hasSource(state)) {
+      return;
+    }
+
+    if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
+      event.preventDefault();
+
+      const direction = event.code === 'ArrowLeft' ? -1 : 1;
+      const offset = direction * currentSeekStep;
+      const targetTime = calculateSeekTarget(state.currentTime, offset, state.duration);
+
+      state = updateTime(state, targetTime);
+      mediaElement.currentTime = state.currentTime;
+      updateUI();
     }
 
     handleSeekKeydown(event);

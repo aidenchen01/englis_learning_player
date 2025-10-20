@@ -102,70 +102,13 @@
       };
     }
 
-    function createSeekKeydownHandler(deps) {
-      const {
-        hasSource,
-        getSeekStep,
-        getCurrentTime,
-        getDuration,
-        applySeek
-      } = deps || {};
-
-      if (typeof applySeek !== 'function') {
-        throw new Error('applySeek must be provided');
-      }
-
-      const safeHasSource = typeof hasSource === 'function' ? hasSource : () => false;
-      const safeGetSeekStep = typeof getSeekStep === 'function' ? getSeekStep : () => DEFAULT_STEP;
-      const safeGetCurrentTime =
-        typeof getCurrentTime === 'function' ? getCurrentTime : () => 0;
-      const safeGetDuration = typeof getDuration === 'function' ? getDuration : () => 0;
-
-      return function handleSeekKeydown(event) {
-        const key = typeof event.key === 'string' && event.key.trim() !== ''
-          ? event.key
-          : typeof event.code === 'string'
-            ? event.code
-            : '';
-
-        const isArrowLeft = key === 'ArrowLeft';
-        const isArrowRight = key === 'ArrowRight';
-
-        if (!isArrowLeft && !isArrowRight) {
-          return false;
-        }
-
-        if (!safeHasSource()) {
-          return false;
-        }
-
-        if (typeof event.preventDefault === 'function') {
-          event.preventDefault();
-        }
-
-        const direction = isArrowLeft ? -1 : 1;
-        const step = normalizeSeekStep(safeGetSeekStep());
-        const offset = direction * step;
-        const nextTime = calculateSeekTarget(
-          safeGetCurrentTime(),
-          offset,
-          safeGetDuration()
-        );
-
-        applySeek(nextTime);
-
-        return true;
-      };
-    }
-
     return {
       STORAGE_KEY,
       DEFAULT_STEP,
       SEEK_STEP_OPTIONS: ALLOWED_STEPS,
       normalizeSeekStep,
       calculateSeekTarget,
-      createSeekStepStore,
-      createSeekKeydownHandler
+      createSeekStepStore
     };
   }
 );
