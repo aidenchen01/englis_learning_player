@@ -2,8 +2,9 @@
   const playerStateModule = (typeof window !== 'undefined' && window.PlayerState) || null;
   const timeFormatterModule = (typeof window !== 'undefined' && window.TimeFormatter) || null;
   const timelineMathModule = (typeof window !== 'undefined' && window.TimelineMath) || null;
+  const seekStepModule = (typeof window !== 'undefined' && window.SeekStep) || null;
 
-  if (!playerStateModule || !timeFormatterModule || !timelineMathModule) {
+  if (!playerStateModule || !timeFormatterModule || !timelineMathModule || !seekStepModule) {
     console.error('Player modules are not available.');
     return;
   }
@@ -19,6 +20,7 @@
   } = playerStateModule;
   const { formatTime } = timeFormatterModule;
   const { timeToPercentage, percentageToTime } = timelineMathModule;
+  const { SEEK_STEP_OPTIONS, createSeekStepStore, createSeekKeydownHandler } = seekStepModule;
 
   const fileInput = document.getElementById('file-input');
   const playPauseButton = document.getElementById('play-pause');
@@ -28,14 +30,56 @@
   const volumeSlider = document.getElementById('volume');
   const fileNameLabel = document.getElementById('file-name');
   const mediaElement = document.getElementById('media-element');
+  const seekStepSelect = document.getElementById('seek-step');
 
   let state = createInitialPlayerState();
   let objectUrl = null;
   let isTimelineActive = false;
+  const seekStepStore = createSeekStepStore(
+    typeof window !== 'undefined' && window.localStorage ? window.localStorage : undefined
+  );
+  let currentSeekStep = seekStepStore.getStep();
 
   mediaElement.classList.add('is-hidden');
   mediaElement.volume = state.volume;
+  const handleSeekKeydown = createSeekKeydownHandler({
+    hasSource: () => hasSource(state),
+    getSeekStep: () => currentSeekStep,
+    getCurrentTime: () => state.currentTime,
+    getDuration: () => state.duration,
+    applySeek(nextTime) {
+      state = updateTime(state, nextTime);
+      mediaElement.currentTime = state.currentTime;
+      updateUI();
+    }
+  });
+
+  initializeSeekStepSelect();
   updateUI();
+
+  function initializeSeekStepSelect() {
+    if (!seekStepSelect) {
+      return;
+    }
+
+    const options = Array.from(seekStepSelect.options);
+    if (options.length === 0) {
+      SEEK_STEP_OPTIONS.forEach((value) => {
+        const option = document.createElement('option');
+        option.value = value.toString();
+        option.textContent = `${value}s`;
+        seekStepSelect.appendChild(option);
+      });
+    }
+
+    seekStepSelect.value = currentSeekStep.toString();
+
+    seekStepSelect.addEventListener('change', () => {
+      const parsed = Number.parseInt(seekStepSelect.value, 10);
+      currentSeekStep = seekStepStore.setStep(parsed);
+      seekStepSelect.value = currentSeekStep.toString();
+    });
+  }
 
   function revokeObjectUrl() {
     if (objectUrl) {
@@ -166,10 +210,15 @@
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.code === 'Space') {
+    const code = event.code || event.key;
+
+    if (code === 'Space' || code === ' ') {
       event.preventDefault();
       handlePlayPauseToggle();
+      return;
     }
+
+    handleSeekKeydown(event);
   });
 
   mediaElement.addEventListener('loadedmetadata', () => {
