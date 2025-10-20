@@ -10,7 +10,7 @@
     "start": "npm run build && electron dist/main/main.js",
     "test": "vitest run",
     "pretest": "npm run build",
-    "dist": "npm run build && electron-builder --mac dmg --publish never"
+    "dist": "npm run build && electron-builder --mac dmg"
   },
   "keywords": [
     "electron",
